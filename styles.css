@@ -1,0 +1,70 @@
+/* Estilos Generales */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+/* Contenedor principal */
+.container {
+    width: 80%;
+    max-width: 800px;
+    margin: 50px auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+/* Título */
+h1 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Lista de estudiantes */
+#studentList {
+    margin-bottom: 20px;
+}
+
+/* Estilo para cada estudiante */
+.student {
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #e9e9e9;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.student:hover {
+    background-color: #d1e7dd;
+    /* Color de fondo al pasar el mouse */
+}
+
+.student.selected {
+    background-color: #198754;
+    /* Color de fondo cuando está seleccionado */
+    color: white;
+    /* Color del texto cuando está seleccionado */
+}
+
+/* Botón */
+button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+    /* Color de fondo al pasar el mouse */
+}
