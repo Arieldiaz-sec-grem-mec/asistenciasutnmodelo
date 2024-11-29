@@ -1,20 +1,118 @@
 <!DOCTYPE html>
-<html lang="es">
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>Registro de Asistencia</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Detección de Cuerpo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { height: 100%; overflow: hidden; background-color: black; }
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>Registro de Asistencia</h1>
-        <div id="studentList"></div>
-        <button id="submitBtn" onclick="submitForm()">Enviar Asistencia</button>
-    </div>
-    <script src="script.js"></script>
-</body>
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="output"></canvas>
 
+  <script>
+    const videoElement = document.getElementById('video');
+    const canvasElement = document.getElementById('output');
+    const canvasCtx = canvasElement.getContext('2d');
+
+    async function setupCamera() {
+      try {
+        // Obtener todas las cámaras disponibles
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        // Buscar la cámara trasera (normalmente es la última en iOS)
+        const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back')) || videoDevices[0];
+
+        // Configurar la cámara trasera
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: backCamera.deviceId, // Usar la cámara trasera
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+
+        videoElement.srcObject = stream;
+        await videoElement.play();
+      } catch (error) {
+        console.error('Error al configurar la cámara:', error);
+        alert('No se pudo acceder a la cámara trasera. Por favor, revisa los permisos del navegador.');
+      }
+    }
+
+    const pose = new Pose({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+    });
+
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    pose.onResults((results) => {
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      if (results.poseLandmarks) {
+        const points = results.poseLandmarks;
+
+        // Dibujar puntos clave
+        const keyPoints = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]; // Cabeza, hombros, codos, manos, caderas, rodillas, pies
+        keyPoints.forEach(index => {
+          const { x, y } = points[index];
+          canvasCtx.beginPath();
+          canvasCtx.arc(x * canvasElement.width, y * canvasElement.height, 8, 0, 2 * Math.PI);
+          canvasCtx.fillStyle = 'fuchsia';
+          canvasCtx.fill();
+        });
+
+        // Dibujar líneas del muñeco
+        const connections = [
+          [0, 11], [0, 12],             // Cabeza a hombros
+          [11, 23], [12, 24],           // Hombros a caderas
+          [23, 24],                     // Tronco (entre caderas)
+          [11, 13], [13, 15],           // Brazo izquierdo
+          [12, 14], [14, 16],           // Brazo derecho
+          [23, 25], [25, 27],           // Pierna izquierda
+          [24, 26], [26, 28]            // Pierna derecha
+        ];
+        connections.forEach(([start, end]) => {
+          const { x: x1, y: y1 } = points[start];
+          const { x: x2, y: y2 } = points[end];
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(x1 * canvasElement.width, y1 * canvasElement.height);
+          canvasCtx.lineTo(x2 * canvasElement.width, y2 * canvasElement.height);
+          canvasCtx.strokeStyle = 'fuchsia';
+          canvasCtx.lineWidth = 2;
+          canvasCtx.stroke();
+        });
+      }
+    });
+
+    setupCamera().then(() => {
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await pose.send({ image: videoElement });
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start();
+    }).catch(error => {
+      console.error('Error al configurar la cámara:', error);
+      alert('Error al configurar la cámara.');
+    });
+  </script>
+</body>
 </html>
